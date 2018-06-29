@@ -2,6 +2,21 @@
 #define PID_H
 
 class PID {
+
+/*
+* Previous CTE
+*/
+double previous_cte_;
+double int_cte_;
+double best_error_;
+int total_runs_;
+double total_error_;
+bool last_error_smaller_than_best_;
+
+double p_[3];
+double dp_[3];
+int next_adjustment_ = 0;
+
 public:
   /*
   * Errors
@@ -17,6 +32,11 @@ public:
   double Ki;
   double Kd;
 
+  /*
+  * Steering angle
+  */
+  double steer_value;
+  
   /*
   * Constructor
   */
@@ -35,7 +55,7 @@ public:
   /*
   * Update the PID error variables given cross track error.
   */
-  void UpdateError(double cte);
+  void UpdateError(double cte);  
 
   /*
   * Calculate the total PID error.
