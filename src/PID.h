@@ -1,29 +1,49 @@
+#include <chrono>
+
 #ifndef PID_H
 #define PID_H
 
+using namespace std;
+using namespace std::chrono;
+
 class PID {
+
+
+enum ControlTerm { Proproportional = 0, Integral = 1, Derivative = 2 };
 
 /*
 * Previous CTE
 */
-double previous_cte_;
-double int_cte_;
 double best_error_;
-int total_runs_;
-double total_error_;
+int update_count_;
+double error_;
 bool last_error_smaller_than_best_;
 
-double p_[3];
+steady_clock::time_point last_update_time_;
+
 double dp_[3];
-int next_adjustment_ = 0;
+
+ControlTerm next_term_ = Proproportional;
+
+bool twiddle_;
+
+const int twiddle_runs_per_pass = 100;
+
+double last_total_error_;
+
+
+
+/*
+* Errors
+*/
+double p_error_;
+double i_error_;
+double d_error_;
+
+
 
 public:
-  /*
-  * Errors
-  */
-  double p_error;
-  double i_error;
-  double d_error;
+
 
   /*
   * Coefficients
@@ -31,12 +51,7 @@ public:
   double Kp;
   double Ki;
   double Kd;
-
-  /*
-  * Steering angle
-  */
-  double steer_value;
-  
+    
   /*
   * Constructor
   */

@@ -1,7 +1,10 @@
 #include "PID.h"
 #include "math.h"
+#include <iostream>
+#include <chrono>
 
 using namespace std;
+using namespace std::chrono;
 
 /*
 * TODO: Complete the PID class.
@@ -14,104 +17,145 @@ PID::~PID() {}
 const double MAX_STEER = M_PI / 4.0;
 
 void PID::Init(double Kp, double Ki, double Kd) {
+
+	// coefficients
 	this->Kp = Kp;
 	this->Ki = Ki;
 	this->Kd = Kd;
 	
-	p_[0] = Kp;
-	p_[1] = Ki;
-	p_[2] = Kd;
+	// error values
+	p_error_ = 0;
+	i_error_ = 0;
+	d_error_ = 0;	
 
-	dp_[0] = 1;
-	dp_[1] = 1;
-	dp_[2] = 1;
-
-	last_error_smaller_than_best_ = true;
-
-	previous_cte_ = 0;
-	next_adjustment_ = 0;
-	total_error_ = 0;
-	total_runs_ = 0;
+	// twiddle values
+	dp_[0] = .001;
+	dp_[1] = 0.0001;
+	dp_[2] = .001;	
+	last_error_smaller_than_best_ = true;	
+	next_term_ = Proproportional;
+	update_count_ = 0;
+	error_ = 0;	
 	best_error_ = 0;
-	int_cte_ = 0;
+	twiddle_ = false;
+	
+	// last total error
+	last_total_error_ = 0;
 
-	p_[next_adjustment_] += dp_[next_adjustment_];
-
+	// time of last update
+	last_update_time_ = steady_clock::now();
 }
 
-void PID::UpdateError(double cte) 
+
+void PID::UpdateError(double cte)
 {
-	total_runs_++;
-	total_error_ += pow(cte, 2);	
+	// calc time since last update
+	steady_clock::time_point now = steady_clock::now();	
+	double duration = duration_cast<std::chrono::milliseconds>(now - last_update_time_).count() / 1000;	
 
-	if (best_error_ == 0)
-	{
-		best_error_ = TotalError();
-	}
+	if (duration == 0) duration = 1;
 
-	double dsum = 0.0;
+	// increment the run count.
+	update_count_++;	
 
-	for(unsigned int i=0; i<3; i++)	
-	{
-		dsum += dp_[i];
-	}
+	// adjust tuning parameters
+	double kp = this->Kp;
+	double ki = this->Ki * duration;
+	double kd = this->Kd / duration;
 
-	if(dsum>0.00001)
-	{ 
-		if (last_error_smaller_than_best_)
+	// calculate the error values
+	d_error_ = cte - p_error_;
+	i_error_ += cte;
+	p_error_ = cte;
+
+	// calculate the total error 
+	last_total_error_ = -p_error_ * kp - i_error_ * ki - d_error_ * kd;
+
+	//cout << "p_error_=" << p_error_ << "|i_error_=" << i_error_ << "|d_error_=" << d_error_<<std::endl;
+
+	// update the last update time
+	last_update_time_ = steady_clock::now();
+
+	// check if twiddle in enabled
+	if (twiddle_)
+	{		
+		error_ += pow(cte, 2);
+
+		double error = error_ / update_count_;
+
+		update_count_ = 0;
+
+		if (best_error_ == 0) best_error_ = error;
+
+		double error_sum = dp_[0] + dp_[1] + dp_[2];
+
+		double term_value;
+		switch (next_term_)
 		{
-			if (TotalError() < best_error_)
+		case Proproportional:
+			term_value = this->Kp;
+			break;
+		case Integral:
+			term_value = this->Ki;
+			break;
+		default:
+			term_value = this->Kd;
+			break;
+		}
+
+
+		if (error_sum > 0.00001)
+		{
+			if (last_error_smaller_than_best_)
 			{
-				best_error_ = TotalError();
-				dp_[next_adjustment_] *= 1.1;
-				last_error_smaller_than_best_ = true;
+				if (error < best_error_)
+				{
+					best_error_ = error;
+					dp_[next_term_] *= 1.1;
+					last_error_smaller_than_best_ = true;
+				}
+				else
+				{
+					term_value -= 2 * dp_[next_term_];
+					last_error_smaller_than_best_ = false;
+				}
 			}
 			else
 			{
-				p_[next_adjustment_] -= 2 * dp_[next_adjustment_];
-				last_error_smaller_than_best_ = false;
+				if (error < best_error_)
+				{
+					best_error_ = error;
+					dp_[next_term_] *= 1.1;
+				}
+				else
+				{
+					term_value += dp_[next_term_];
+					dp_[next_term_] *= 0.9;
+				}
 			}
-		}
-		else
-		{
-			if (TotalError() < best_error_)
+
+			switch (next_term_)
 			{
-				best_error_ = TotalError();
-				dp_[next_adjustment_] *= 1.1;
+			case Proproportional:
+				this->Kp = term_value;
+				next_term_ = Integral;
+				break;
+			case Integral:
+				this->Ki = term_value;
+				next_term_ = Derivative;
+				break;
+			default:
+				this->Kd = term_value;
+				next_term_ = Proproportional;
+				break;
 			}
-			else
-			{
-				p_[next_adjustment_] += dp_[next_adjustment_];
-				dp_[next_adjustment_] *= 0.9;
-			}
-		}
-
-		if (next_adjustment_ == 2)
-			next_adjustment_ = 0;
-		else
-			next_adjustment_++;
-
-	}
-	double diff_cte = cte - previous_cte_;
-	previous_cte_ = cte;
-	int_cte_ += cte;
-	
-	double steer = -p_[0] * cte - p_[1] * diff_cte - p_[2] * int_cte_;
-
-	if (steer > MAX_STEER)
-		steer = MAX_STEER;
-
-	if (steer < -MAX_STEER)
-		steer = -MAX_STEER;
-
-	this->steer_value = steer;
-
-
+		}		
+	}	
 }
 
 
 double PID::TotalError() {
 
-	return this->total_error_ / total_runs_;
+	return last_total_error_;
 }
 

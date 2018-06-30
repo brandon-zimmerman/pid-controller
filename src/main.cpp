@@ -28,13 +28,30 @@ std::string hasData(std::string s) {
   return "";
 }
 
-int main()
+int main(int argc, char *argv[])
 {
-  uWS::Hub h;
+	uWS::Hub h;
 
-  PID pid;
-  // TODO: Initialize the pid variable.
-  pid.Init(0, 0, 0);
+	PID pid;
+	// TODO: Initialize the pid variable.
+	double init_Kp, init_Ki, init_Kd;
+
+	// check for command line args containing Kp, Ki, and Kd
+	if (argc >= 4)
+	{
+		init_Kp = atof(argv[1]);
+		init_Ki = atof(argv[2]);
+		init_Kd = atof(argv[3]);
+	}
+	else
+	{
+		// set default values	
+		init_Kp = 0.153862;
+		init_Ki = 0.00298608;
+		init_Kd = 1.82985;
+	} 
+
+	pid.Init(init_Kp, init_Ki, init_Kd);
 
   
 #ifdef UWS_VCPKG
@@ -66,13 +83,16 @@ int main()
           * another PID controller to control the speed!
           */
 		  pid.UpdateError(cte);
-		  steer_value = pid.steer_value;
+		  steer_value = pid.TotalError();
+		  if (steer_value > 1) steer_value = 1;
+		  if (steer_value < -1) steer_value = -1;
           
           // DEBUG
-          std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
+		  //std::cout << "Kp:" << pid.Kp << "--Ki:" << pid.Ki << "--Kd:" << pid.Kd << std::endl;
+          //std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
 
           json msgJson;
-          msgJson["steering_angle"] = steer_value;
+          msgJson["steering_angle"] = steer_value;		  
           msgJson["throttle"] = 0.3;
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
           std::cout << msg << std::endl;
