@@ -46,9 +46,9 @@ int main(int argc, char *argv[])
 	else
 	{
 		// set default values	
-		init_Kp = 0.153862;
-		init_Ki = 0.00298608;
-		init_Kd = 1.82985;
+		init_Kp = 0.15;
+		init_Ki = 0.00;
+		init_Kd = 1.83;
 	} 
 
 	pid.Init(init_Kp, init_Ki, init_Kd);

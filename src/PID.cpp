@@ -7,14 +7,13 @@ using namespace std;
 using namespace std::chrono;
 
 /*
-* TODO: Complete the PID class.
+* A proportional-integral-derivative (PID) controller.
 */
 
 PID::PID() {}
 
 PID::~PID() {}
 
-const double MAX_STEER = M_PI / 4.0;
 
 void PID::Init(double Kp, double Ki, double Kd) {
 
