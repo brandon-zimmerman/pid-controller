@@ -26,7 +26,7 @@ The C++ PID controller solution receives the elements described above from the s
 
 Sample console output of messages returned to the simulator is below.  Each message includes steering and throttle values.
 
-![PID Controller Console Output](images/console output.png)
+![PID Controller Console Output](images/console-output.png)
 
 #### P,I,D Components
 
@@ -44,12 +44,12 @@ The three terms and their effects are defined below.  They are used in the steer
 
 I started with large Kp values and set the other terms to zero.  I eventually arrived at a Kp value of 0.12 which made the vehicle drive ok for a short while.  An example of the simulator with term values [Kp=0.12, Ki= 0, Kd=0] is below.  The vehicle starts off ok, but soon begins to overshoot until it runs off the road.
 
-![Kp=0.12, Ki= 0, Kd=0](/images/simulator - proportional - 0.12.gif)
+![Kp=0.12, Ki= 0, Kd=0](images/simulator - proportional - 0.12.gif)
 
 I then adjusted the Kd term to soften the Kp steering values and reduce overshoot/oscillation.  I eventually arrived at a Kd value of 1.83.  The vehicle was then able to make it around the track; however, it tended to cross over the left and right yellow lane lines at turns.  Therefore I increased the Kp value until I reached 0.15.  I did not need to set the Ki value for the vehicle to make it around the track.  
 
 An example of the simulator with term values [Kp=0.15, Ki=0, Kd=1.83] is below.
 
-![Kp=0.15, Ki=0, Kd=1.83](/images/simulator - Kp- 0.12 Kd-1.82.gif)
+![Kp=0.15, Ki=0, Kd=1.83](images/simulator - Kp- 0.12 Kd-1.82.gif)
 
 ****
