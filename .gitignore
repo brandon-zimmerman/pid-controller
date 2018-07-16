@@ -4,3 +4,8 @@ tags
 .editorconfig
 /.vs/*
 /x64/*
+*.filters
+*.user
+/ide_profiles/VisualStudio/x64/*
+/ide_profiles/VisualStudio/.vs/*
+/ide_profiles/VisualStudio/Debug/*
